@@ -15,7 +15,65 @@ GIST_ID_FILE = "gist_id.txt"
 TELEGRAM_API_BASE = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 
 
-# ... (функции get_gist_id, save_gist_id, load_seen_ids_from_gist, create_or_update_gist — без изменений)
+def get_gist_id():
+    if os.path.exists(GIST_ID_FILE):
+        with open(GIST_ID_FILE, "r") as f:
+            return f.read().strip()
+    return None
+
+
+def save_gist_id(gist_id):
+    with open(GIST_ID_FILE, "w") as f:
+        f.write(gist_id)
+
+
+def load_seen_ids_from_gist(gist_id):
+    headers = {"Authorization": f"token {GIST_TOKEN}"}
+    try:
+        resp = requests.get(f"https://api.github.com/gists/{gist_id}", headers=headers, timeout=10)
+        if resp.status_code == 404:
+            print("[ℹ️] Gist не найден — будет создан новый.")
+            return set()
+        resp.raise_for_status()
+        gist = resp.json()
+        content = gist["files"].get("seen_ads.json", {}).get("content", "[]")
+        ids = json.loads(content)
+        print(f"[📥 Gist] Загружено {len(ids)} ID")
+        return set(ids)
+    except Exception as e:
+        print(f"[⚠️] Ошибка загрузки Gist: {e}")
+        return set()
+
+
+def create_or_update_gist(seen_ids):
+    headers = {
+        "Authorization": f"token {GIST_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    content = json.dumps(list(seen_ids), ensure_ascii=False, indent=2)
+    gist_id = get_gist_id()
+
+    payload = {
+        "description": "Kufar.by seen ads IDs (auto-updated)",
+        "public": False,
+        "files": {
+            "seen_ads.json": {"content": content}
+        }
+    }
+
+    try:
+        url = f"https://api.github.com/gists/{gist_id}" if gist_id else "https://api.github.com/gists"
+        method = requests.patch if gist_id else requests.post
+        resp = method(url, json=payload, headers=headers, timeout=10)
+        resp.raise_for_status()
+        new_id = resp.json()["id"]
+        if not gist_id:
+            save_gist_id(new_id)
+        print(f"[✅ Gist] {'Обновлён' if gist_id else 'Создан'} ({new_id})")
+        return new_id
+    except Exception as e:
+        print(f"[❌] Ошибка Gist: {e}")
+        return None
 
 
 def send_telegram_with_photo(photo_url, text, url):
