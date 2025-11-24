@@ -144,7 +144,7 @@ def fetch_ads():
 
     print(f"[📡] Запрос к {API_URL}")
     try:
-        resp = requests.post(API_URL, json=payload, headers=headers, timeout=15)
+        resp = requests.get(API_URL, json=payload, headers=headers, timeout=15)
         print(f"[🔍] Статус: {resp.status_code}")
         resp.raise_for_status()
         data = resp.json()
