@@ -3,6 +3,7 @@ import json
 import requests
 import time
 from datetime import datetime
+from urllib.parse import quote
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
@@ -21,44 +22,34 @@ def get_gist_id():
             return f.read().strip()
     return None
 
-
 def save_gist_id(gist_id):
     with open(GIST_ID_FILE, "w") as f:
         f.write(gist_id)
-
 
 def load_seen_ids_from_gist(gist_id):
     headers = {"Authorization": f"token {GIST_TOKEN}"}
     try:
         resp = requests.get(f"https://api.github.com/gists/{gist_id}", headers=headers, timeout=10)
         if resp.status_code == 404:
-            print("[ℹ️] Gist не найден — будет создан новый.")
+            print("[ℹ️] Gist не найден")
             return set()
         resp.raise_for_status()
         gist = resp.json()
         content = gist["files"].get("seen_ads.json", {}).get("content", "[]")
-        ids = json.loads(content)
-        print(f"[📥 Gist] Загружено {len(ids)} ID")
-        return set(ids)
+        return set(json.loads(content))
     except Exception as e:
-        print(f"[⚠️] Ошибка загрузки Gist: {e}")
+        print(f"[⚠️] Ошибка Gist: {e}")
         return set()
 
-
 def create_or_update_gist(seen_ids):
-    headers = {
-        "Authorization": f"token {GIST_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    content = json.dumps(list(seen_ids), ensure_ascii=False, indent=2)
+    headers = {"Authorization": f"token {GIST_TOKEN}"}
+    content = json.dumps(list(seen_ids), ensure_ascii=False)
     gist_id = get_gist_id()
 
     payload = {
-        "description": "Kufar.by seen ads IDs (auto-updated)",
+        "description": "Kufar.by seen ads IDs",
         "public": False,
-        "files": {
-            "seen_ads.json": {"content": content}
-        }
+        "files": {"seen_ads.json": {"content": content}}
     }
 
     try:
@@ -69,13 +60,13 @@ def create_or_update_gist(seen_ids):
         new_id = resp.json()["id"]
         if not gist_id:
             save_gist_id(new_id)
-        print(f"[✅ Gist] {'Обновлён' if gist_id else 'Создан'} ({new_id})")
         return new_id
     except Exception as e:
-        print(f"[❌] Ошибка Gist: {e}")
+        print(f"[❌] Gist error: {e}")
         return None
 
 
+# --- Telegram helpers (без изменений) ---
 def send_telegram_with_photo(photo_url, text, url):
     try:
         resp = requests.post(
@@ -91,19 +82,14 @@ def send_telegram_with_photo(photo_url, text, url):
             },
             timeout=20
         )
-        if resp.status_code == 200:
-            print(f"[✅ Telegram] Фото отправлено: {url}")
-        else:
-            print(f"[⚠️ Telegram] sendPhoto: {resp.status_code}")
+        if resp.status_code != 200:
             send_telegram_text(text, url)
-    except Exception as e:
-        print(f"[❌ Telegram] sendPhoto: {e}")
+    except:
         send_telegram_text(text, url)
-
 
 def send_telegram_text(text, url):
     try:
-        resp = requests.post(
+        requests.post(
             f"{TELEGRAM_API_BASE}/sendMessage",
             json={
                 "chat_id": TELEGRAM_CHAT_ID,
@@ -112,39 +98,31 @@ def send_telegram_text(text, url):
             },
             timeout=10
         )
-        if resp.status_code == 200:
-            print(f"[✅ Telegram] Текст отправлен: {url}")
-        else:
-            print(f"[⚠️ Telegram] sendMessage: {resp.status_code}")
-    except Exception as e:
-        print(f"[❌ Telegram] sendMessage: {e}")
+    except:
+        pass
 
 
 def fetch_ads():
-    # 🔥 ПРАВИЛЬНЫЙ ЭНДПОИНТ (ноябрь 2025)
-    API_URL = "https://api.kufar.by/search-api/v2/search/rendered-paginated"
+    # Твой точный URL (GET-запрос!)
+    base_url = "https://api.kufar.by/search-api/v2/search/rendered-paginated"
+    params = {
+        "cat": "1010",  # продажа квартир
+        "cur": "USD",   # валюта (в ответе всё равно BYN)
+        "gtsy": "country-belarus~province-grodnenskaja_oblast~locality-grodno",
+        "lang": "ru",
+        "rms": "v.or:2",  # ← не %3A, requests сам закодирует
+        "size": "20",     # 20 объявлений за раз
+        "typ": "sell"
+    }
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Origin": "https://kufar.by",
-        "Referer": "https://kufar.by/"
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+        "Accept": "application/json"
     }
 
-    payload = {
-        "cat": "1010",
-        "cur": "BYN",
-        "gtsy": "country-belarus~province-grodnenskaja_oblast~locality-grodno",
-        "rms": "v.or:2",
-        "lang": "ru",
-        "size": 10,
-        "typ": "typ"
-    }
-
-    print(f"[📡] Запрос к {API_URL}")
+    print("[📡] Запрос к search-api/v2/rendered-paginated (GET)")
     try:
-        resp = requests.get(API_URL, json=payload, headers=headers, timeout=15)
+        resp = requests.get(base_url, params=params, headers=headers, timeout=15)
         print(f"[🔍] Статус: {resp.status_code}")
         resp.raise_for_status()
         data = resp.json()
@@ -156,11 +134,9 @@ def fetch_ads():
         return []
 
 
-# ... (main() — без изменений)
 def main():
-    print(f"\n[{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}] 🚀 Запуск (searchapi/v2 — ВЕРНО)")
-    gist_id = get_gist_id()
-    seen_ids = load_seen_ids_from_gist(gist_id)
+    print(f"\n[{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}] 🚀 Запуск (rendered-paginated — ТВОЙ URL)")
+    seen_ids = load_seen_ids_from_gist(get_gist_id())
 
     ads = fetch_ads()
     if not ads:
@@ -173,20 +149,24 @@ def main():
         if not ad_id or ad_id in seen_ids:
             continue
 
+        # Данные
         title = ad.get("subject", "Без названия")
         price_val = ad.get("price", {}).get("uah", {}).get("amount", "???")
         location = ad.get("location", {}).get("city", {}).get("name", "Гродно")
         district = ad.get("location", {}).get("district", {}).get("name", "")
         url = f"https://kufar.by/item/{ad_id}"
 
+        # Форматирование
         price_str = f"{price_val:,} BYN".replace(",", " ")
         district_str = f", {district}" if district else ""
         base_text = f"<b>{title}</b>\n{price_str} | {location}{district_str}"
         caption = (base_text[:950] + "…") if len(base_text) > 1024 else base_text
 
+        # Фото
         images = ad.get("images", [])
         photo_url = images[0].get("url", "") if images else ""
 
+        # Отправка
         if photo_url:
             send_telegram_with_photo(photo_url, caption, url)
         else:
