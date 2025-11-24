@@ -122,7 +122,7 @@ def send_telegram_text(text, url):
 
 def fetch_ads():
     # 🔥 ПРАВИЛЬНЫЙ ЭНДПОИНТ (ноябрь 2025)
-    API_URL = "https://api.kufar.by/search-api/v2/search"  # ← ВОТ ОН!
+    API_URL = "https://api.kufar.by/search-api/v2/search/rendered-paginated"
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -133,15 +133,13 @@ def fetch_ads():
     }
 
     payload = {
-        "sort_type": "lst.d",
-        "sort_order": "desc",
+        "cat": "1010",
+        "cur": "BYN",
+        "gtsy": "country-belarus~province-grodnenskaja_oblast~locality-grodno",
+        "rms": "v.or:2",
         "lang": "ru",
         "size": 10,
-        "query": {
-            "rgn": "1048",   # Гродно
-            "t": "1010",     # продажа квартир
-            "ar": "3"        # 2 комнаты
-        }
+        "typ": "typ"
     }
 
     print(f"[📡] Запрос к {API_URL}")
