@@ -9,9 +9,19 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 GIST_TOKEN = os.getenv("GIST_TOKEN")
 GIST_ID = os.getenv("GIST_ID")
+AUTHORIZED_CHAT_IDS = set()
+auth_raw = os.getenv("AUTHORIZED_CHAT_IDS", "")
 
 if not all([TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GIST_TOKEN, GIST_ID]):
     raise ValueError("❌ Не заданы обязательные переменные")
+
+if auth_raw:
+    try:
+        AUTHORIZED_CHAT_IDS = {str(x).strip() for x in auth_raw.split(",") if x.strip()}
+        print(f"[🔐] Авторизовано {len(AUTHORIZED_CHAT_IDS)} чатов: {AUTHORIZED_CHAT_IDS}")
+    except Exception as e:
+        print(f"[⚠️] Ошибка парсинга AUTHORIZED_CHAT_IDS: {e}")
+
 
 TELEGRAM_API_BASE = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 
@@ -53,41 +63,44 @@ def save_seen_ids(seen_ids):
     except Exception as e:
         print(f"[❌] Ошибка сохранения Gist: {e}")
 
+def send_notification(text, url, photo_url=None):
+    if not AUTHORIZED_CHAT_IDS:
+        print("[⚠️] Нет авторизованных чатов — пропускаем отправку")
+        return
 
-def send_telegram_with_photo(photo_url, text, url):
-    try:
-        resp = requests.post(
-            f"{TELEGRAM_API_BASE}/sendPhoto",
-            data={
-                "chat_id": TELEGRAM_CHAT_ID,
-                "photo": photo_url,
-                "caption": text,
-                "parse_mode": "HTML",
-                "reply_markup": json.dumps({
-                    "inline_keyboard": [[{"text": "📸 Открыть", "url": url}]]
-                })
-            },
-            timeout=20
-        )
-        if resp.status_code != 200:
-            send_telegram_text(text, url)
-    except:
-        send_telegram_text(text, url)
-
-
-def send_telegram_text(text, url):
-    try:
-        requests.post(
-            f"{TELEGRAM_API_BASE}/sendMessage",
-            json={
-                "chat_id": TELEGRAM_CHAT_ID,
-                "text": f"{text}\n🔗 {url}",
-                "parse_mode": "HTML"
-            },
-            timeout=10
-        )
-    except:
-        pass
+    for chat_id in AUTHORIZED_CHAT_IDS:
+        try:
+            if photo_url:
+                resp = requests.post(
+                    f"{TELEGRAM_API_BASE}/sendPhoto",
+                    data={
+                        "chat_id": chat_id,
+                        "photo": photo_url,
+                        "caption": text,
+                        "parse_mode": "HTML",
+                        "reply_markup": json.dumps({
+                            "inline_keyboard": [[{"text": "📸 Открыть", "url": url}]]
+                        })
+                    },
+                    timeout=20
+                )
+            else:
+                resp = requests.post(
+                    f"{TELEGRAM_API_BASE}/sendMessage",
+                    json={
+                        "chat_id": chat_id,
+                        "text": f"{text}\n🔗 {url}",
+                        "parse_mode": "HTML"
+                    },
+                    timeout=10
+                )
+            if resp.status_code == 200:
+                print(f"[✅] Отправлено в чат {chat_id}")
+            else:
+                print(f"[❌] Ошибка в чат {chat_id}: {resp.status_code}")
+        except Exception as e:
+            print(f"[⚠️] Исключение при отправке в {chat_id}: {e}")
+        time.sleep(0.3)
 
 
 def fetch_ads():
@@ -166,10 +179,7 @@ def main():
         photo_url = images[0].get("url", "") if images else ""
 
         # Отправка
-        if photo_url:
-            send_telegram_with_photo(photo_url, caption, url)
-        else:
-            send_telegram_text(base_text, url)
+        send_notification(caption, url, photo_url)
 
         seen_ids.add(ad_id)
         new_count += 1
