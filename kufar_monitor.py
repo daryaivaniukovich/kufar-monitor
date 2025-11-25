@@ -181,7 +181,7 @@ def main():
         time.sleep(0.5)
 
     if new_count:
-        create_or_update_gist(seen_ids)
+        save_seen_ids(seen_ids)
         print(f"[🎉] Отправлено {new_count} новых объявлений")
     else:
         print("[ℹ️] Новых объявлений нет")
