@@ -26,5 +26,6 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
+          AUTHORIZED_CHAT_IDS: ${{ secrets.AUTHORIZED_CHAT_IDS }}
           GITHUB_USER: ${{ github.repository_owner }}
         run: python kufar_monitor.py
