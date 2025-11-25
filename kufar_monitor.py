@@ -151,15 +151,27 @@ def main():
 
         # Данные
         title = ad.get("subject", "Без названия")
-        price_val = ad.get("price", {}).get("uah", {}).get("amount", "???")
-        location = ad.get("location", {}).get("city", {}).get("name", "Гродно")
-        district = ad.get("location", {}).get("district", {}).get("name", "")
+        price_byn_val = float(ad.get("price_byn", "0")) // 100
+        price_usd_val = float(ad.get("price_usd", "0")) // 100
+
+        ad_params = ad.get("ad_parameters", [])
+        for ad_param in ad_params:
+            param_name = ad_param.get("p")
+            if param_name == "area"
+                district = ad_param.get("v1", "")
+            if param_name == "size"
+                size = ad_param.get("v", "")
+            if param_name == "floor"
+                floor = ad_param.get("v1", [])[0]
+            if param_name == "re_number_floors"
+                all_number_floors = ad_param.get("v1", "")
+            if param_name == "year_built"
+                year_built = ad_param.get("v1", "")
         url = f"https://kufar.by/item/{ad_id}"
 
         # Форматирование
-        price_str = f"{price_val} BYN".replace(",", " ")
-        district_str = f", {district}" if district else ""
-        base_text = f"<b>{title}</b>\n{price_str} | {location}{district_str}"
+        price_str = f"{price_usd_val} USD ({price_val} BYN)"
+        base_text = f"<b>{title}</b>\n{price_str}\n{district} | {size} кв.м. | {floor}/{all_number_floors} этаж | {year_built} год"
         caption = (base_text[:950] + "…") if len(base_text) > 1024 else base_text
 
         # Фото
