@@ -8,65 +8,52 @@ from urllib.parse import quote
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 GIST_TOKEN = os.getenv("GIST_TOKEN")
+GIST_ID = os.getenv["GIST_ID"]
 
-if not all([TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GIST_TOKEN]):
+if not all([TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GIST_TOKEN, GIST_ID]):
     raise ValueError("❌ Не заданы обязательные переменные")
 
-GIST_ID_FILE = "gist_id.txt"
 TELEGRAM_API_BASE = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 
-
-def get_gist_id():
-    if os.path.exists(GIST_ID_FILE):
-        with open(GIST_ID_FILE, "r") as f:
-            return f.read().strip()
-    return None
-
-def save_gist_id(gist_id):
-    with open(GIST_ID_FILE, "w") as f:
-        f.write(gist_id)
-
-def load_seen_ids_from_gist(gist_id):
-    headers = {"Authorization": f"token {GIST_TOKEN}"}
+def load_seen_ids():
     try:
-        resp = requests.get(f"https://api.github.com/gists/{gist_id}", headers=headers, timeout=10)
-        if resp.status_code == 404:
-            print("[ℹ️] Gist не найден")
-            return set()
+        resp = requests.get(
+            f"https://api.github.com/gists/{GIST_ID}",
+            headers={"Authorization": f"token {GIST_TOKEN}"},
+            timeout=10
+        )
         resp.raise_for_status()
-        gist = resp.json()
-        content = gist["files"].get("seen_ads.json", {}).get("content", "[]")
+        content = resp.json()["files"]["seen_ads.json"]["content"]
         return set(json.loads(content))
     except Exception as e:
-        print(f"[⚠️] Ошибка Gist: {e}")
+        print(f"[⚠️] Ошибка загрузки Gist {GIST_ID}: {e}. Возвращаем пустой набор.")
         return set()
 
-def create_or_update_gist(seen_ids):
-    headers = {"Authorization": f"token {GIST_TOKEN}"}
-    content = json.dumps(list(seen_ids), ensure_ascii=False)
-    gist_id = get_gist_id()
 
-    payload = {
-        "description": "Kufar.by seen ads IDs",
-        "public": False,
-        "files": {"seen_ads.json": {"content": content}}
-    }
-
+def save_seen_ids(seen_ids):
     try:
-        url = f"https://api.github.com/gists/{gist_id}" if gist_id else "https://api.github.com/gists"
-        method = requests.patch if gist_id else requests.post
-        resp = method(url, json=payload, headers=headers, timeout=10)
+        clean_ids = sorted({str(x).strip() for x in seen_ids if x})
+        resp = requests.patch(
+            f"https://api.github.com/gists/{GIST_ID}",
+            headers={
+                "Authorization": f"token {GIST_TOKEN}",
+                "Accept": "application/vnd.github+json"
+            },
+            json={
+                "files": {
+                    "seen_ads.json": {
+                        "content": json.dumps(clean_ids, ensure_ascii=False)
+                    }
+                }
+            },
+            timeout=10
+        )
         resp.raise_for_status()
-        new_id = resp.json()["id"]
-        if not gist_id:
-            save_gist_id(new_id)
-        return new_id
+        print(f"[✅] Сохранено {len(clean_ids)} ID в Gist {GIST_ID}")
     except Exception as e:
-        print(f"[❌] Gist error: {e}")
-        return None
+        print(f"[❌] Ошибка сохранения Gist: {e}")
 
 
-# --- Telegram helpers (без изменений) ---
 def send_telegram_with_photo(photo_url, text, url):
     try:
         resp = requests.post(
@@ -86,6 +73,7 @@ def send_telegram_with_photo(photo_url, text, url):
             send_telegram_text(text, url)
     except:
         send_telegram_text(text, url)
+
 
 def send_telegram_text(text, url):
     try:
@@ -135,10 +123,9 @@ def fetch_ads():
 
 
 def main():
-    print(f"\n[{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}] 🚀 Запуск (rendered-paginated — ТВОЙ URL)")
-    seen_ids = load_seen_ids_from_gist(get_gist_id())
-    print(f"✅ Загружено {len(seen_ids)} ID из Gist")
-    print(f"🔍 Примеры ID: {list(seen_ids)[:3]}")
+    print(f"[{datetime.utcnow().isoformat()}] 🚀 Старт")
+    seen_ids = load_seen_ids()
+    print(f"Загружено {len(seen_ids)} ID")
 
     ads = fetch_ads()
     if not ads:
@@ -146,11 +133,10 @@ def main():
         return
 
     print(f"📡 Получено {len(ads)} объявлений")
-    print(f"🔍 Первые ad_id: {[ad.get('ad_id') for ad in ads[:3]]}")
 
     new_count = 0
     for ad in ads:
-        ad_id = str(ad.get("ad_id", ""))
+        ad_id = str(ad.get("ad_id", "")).strip()
         print(f"ID={ad_id}")
         if not ad_id or ad_id in seen_ids:
             continue
@@ -168,7 +154,7 @@ def main():
             if param_name == "size":
                 size = ad_param.get("v", "")
             if param_name == "floor":
-                floor = ad_param.get("v1", [])[0]
+                floor = ad_param.get("v1", [])
             if param_name == "re_number_floors":
                 all_number_floors = ad_param.get("v1", "")
             if param_name == "year_built":
