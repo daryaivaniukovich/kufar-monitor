@@ -159,14 +159,14 @@ def main():
             param_name = ad_param.get("p")
             if param_name == "area":
                 district = ad_param.get("v1", "")
-            if param_name == "size":
+            elif param_name == "size":
                 size = ad_param.get("v", "")
-            if param_name == "floor":
-                floor = ad_param.get("v1", [])
-            if param_name == "re_number_floors":
-                all_number_floors = ad_param.get("v1", "")
-            if param_name == "year_built":
-                year_built = ad_param.get("v1", "")
+            elif param_name == "floor":
+                floor = ad_param.get("v", [])
+            elif param_name == "re_number_floors":
+                all_number_floors = ad_param.get("v", "")
+            elif param_name == "year_built":
+                year_built = ad_param.get("v", "")
         url = f"https://kufar.by/item/{ad_id}"
 
         # Форматирование
