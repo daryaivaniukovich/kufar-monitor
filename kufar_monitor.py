@@ -162,7 +162,7 @@ def main():
         url = f"https://kufar.by/item/{ad_id}"
 
         # Форматирование
-        price_str = f"{price_usd_val} USD ({price_val} BYN)"
+        price_str = f"{price_usd_val} USD ({price_byn_val} BYN)"
         base_text = f"<b>{title}</b>\n{price_str}\n{district} | {size} кв.м. | {floor}/{all_number_floors} этаж | {year_built} год"
         caption = (base_text[:950] + "…") if len(base_text) > 1024 else base_text
 
