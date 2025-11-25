@@ -125,19 +125,14 @@ def fetch_ads():
 def main():
     print(f"[{datetime.utcnow().isoformat()}] 🚀 Старт")
     seen_ids = load_seen_ids()
-    print(f"Загружено {len(seen_ids)} ID")
 
     ads = fetch_ads()
     if not ads:
-        print("[ℹ️] Объявлений нет")
         return
-
-    print(f"📡 Получено {len(ads)} объявлений")
 
     new_count = 0
     for ad in ads:
         ad_id = str(ad.get("ad_id", "")).strip()
-        print(f"ID={ad_id}")
         if not ad_id or ad_id in seen_ids:
             continue
 
