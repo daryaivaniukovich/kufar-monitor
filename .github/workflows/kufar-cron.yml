@@ -1,7 +1,7 @@
 name: Kufar Monitor
 on:
   schedule:
-    - cron: '*/10 * * * *'  # каждые 10 мин (UTC)
+    - cron: '0 * * * *'  # каждый час (UTC)
   workflow_dispatch:  # для ручного запуска
 
 jobs:
@@ -25,5 +25,6 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
           GITHUB_USER: ${{ github.repository_owner }}
         run: python kufar_monitor.py
