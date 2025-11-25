@@ -163,15 +163,15 @@ def main():
         ad_params = ad.get("ad_parameters", [])
         for ad_param in ad_params:
             param_name = ad_param.get("p")
-            if param_name == "area"
+            if param_name == "area":
                 district = ad_param.get("v1", "")
-            if param_name == "size"
+            if param_name == "size":
                 size = ad_param.get("v", "")
-            if param_name == "floor"
+            if param_name == "floor":
                 floor = ad_param.get("v1", [])[0]
-            if param_name == "re_number_floors"
+            if param_name == "re_number_floors":
                 all_number_floors = ad_param.get("v1", "")
-            if param_name == "year_built"
+            if param_name == "year_built":
                 year_built = ad_param.get("v1", "")
         url = f"https://kufar.by/item/{ad_id}"
 
