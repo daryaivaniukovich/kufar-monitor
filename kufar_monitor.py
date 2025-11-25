@@ -157,7 +157,7 @@ def main():
         url = f"https://kufar.by/item/{ad_id}"
 
         # Форматирование
-        price_str = f"{price_val:,} BYN".replace(",", " ")
+        price_str = f"{price_val} BYN".replace(",", " ")
         district_str = f", {district}" if district else ""
         base_text = f"<b>{title}</b>\n{price_str} | {location}{district_str}"
         caption = (base_text[:950] + "…") if len(base_text) > 1024 else base_text
