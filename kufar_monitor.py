@@ -107,10 +107,10 @@ def fetch_ads():
     base_url = "https://api.kufar.by/search-api/v2/search/rendered-paginated"
     params = {
         "cat": "1010",  # продажа квартир
-        "cur": "USD",   # валюта (в ответе всё равно BYN)
+        "cur": "USD",   # валюта
         "gtsy": "country-belarus~province-grodnenskaja_oblast~locality-grodno",
         "lang": "ru",
-        "rms": "v.or:2",  # ← не %3A, requests сам закодирует
+        "rms": "v.or:2",  # 2-х комнатные
         "size": "20",     # 20 объявлений за раз
         "typ": "sell"
     }
@@ -137,15 +137,21 @@ def fetch_ads():
 def main():
     print(f"\n[{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}] 🚀 Запуск (rendered-paginated — ТВОЙ URL)")
     seen_ids = load_seen_ids_from_gist(get_gist_id())
+    print(f"✅ Загружено {len(seen_ids)} ID из Gist")
+    print(f"🔍 Примеры ID: {list(seen_ids)[:3]}")
 
     ads = fetch_ads()
     if not ads:
         print("[ℹ️] Объявлений нет")
         return
 
+    print(f"📡 Получено {len(ads)} объявлений")
+    print(f"🔍 Первые ad_id: {[ad.get('ad_id') for ad in ads[:3]]}")
+
     new_count = 0
     for ad in ads:
         ad_id = str(ad.get("ad_id", ""))
+        print(f"ID={ad_id}")
         if not ad_id or ad_id in seen_ids:
             continue
 
