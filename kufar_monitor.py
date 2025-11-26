@@ -162,7 +162,7 @@ def main():
         square_meter = 0
         for ad_param in ad_params:
             param_name = ad_param.get("p")
-            elif param_name == "size":
+            if param_name == "size":
                 size = ad_param.get("v", "")
             elif param_name == "floor":
                 floor = ad_param.get("v", [])
