@@ -1,7 +1,7 @@
 name: Kufar Monitor
 on:
   schedule:
-    - cron: '0 10 * * *'  # каждый день (UTC)
+    - cron: '0 * * * *'  # каждый час (UTC)
   workflow_dispatch:  # для ручного запуска
 
 jobs:

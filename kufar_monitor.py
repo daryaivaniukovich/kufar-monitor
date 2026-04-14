@@ -107,9 +107,13 @@ def fetch_ads():
     # Твой точный URL (GET-запрос!)
     base_url = "https://api.kufar.by/search-api/v2/search/rendered-paginated"
     params = {
-        "cat": "1010",  # продажа квартир
+        "cat": "1020",  # продажа квартир
         "cur": "USD",   # валюта
-        "gtsy": "country-belarus~province-grodnenskaja_oblast~locality-grodno",
+        "gtsy": "country-belarus~province-grodnenskaja_oblast",
+        "gbx": "b%3A23.617241071925587%2C53.558095463687145%2C24.064247297511532%2C53.718464167366534",
+        "gcm": "1",
+        "prc": "r%3A0%2C35000",
+        "saa": "r%3A15%2C1000",
         "lang": "ru",
         "rms": "v.or:2",  # 2-х комнатные
         "size": "20",     # 20 объявлений за раз
