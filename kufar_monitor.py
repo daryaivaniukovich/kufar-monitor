@@ -158,28 +158,16 @@ def main():
         price_usd_val = float(ad.get("price_usd", "0")) // 100
 
         ad_params = ad.get("ad_parameters", [])
-        size = 0
-        floor = 0
-        all_number_floors = 0
-        year_built = 0
-        square_meter = 0
+        size_area = 0
         for ad_param in ad_params:
             param_name = ad_param.get("p")
-            if param_name == "size":
-                size = ad_param.get("v", "")
-            elif param_name == "floor":
-                floor = ad_param.get("v", [])
-            elif param_name == "re_number_floors":
-                all_number_floors = ad_param.get("v", "")
-            elif param_name == "year_built":
-                year_built = ad_param.get("v", "")
-            elif param_name == "square_meter":
-                square_meter = ad_param.get("v", "")
+            if param_name == "size_area":
+                size_area = ad_param.get("v", "")
         url = f"https://kufar.by/item/{ad_id}"
 
         # Форматирование
-        price_str = f"{price_usd_val} USD ({price_byn_val} BYN) [{square_meter} USD за кв.м.]"
-        base_text = f"<b>{title}</b>\n{price_str} | {size} кв.м. | {floor}/{all_number_floors} этаж | {year_built} год"
+        price_str = f"{price_usd_val} USD ({price_byn_val} BYN)"
+        base_text = f"<b>{title}</b>\n{price_str} | {size_area} сот."
         caption = (base_text[:950] + "…") if len(base_text) > 1024 else base_text
 
         # Фото
